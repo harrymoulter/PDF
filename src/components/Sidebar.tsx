@@ -23,9 +23,21 @@ interface DynamicNavItem {
 }
 
 export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarProps) {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, signOut, setIsAuthModalOpen, setAuthModalView } = useAuth();
   const { settings } = useSettings();
   const [dynamicLinks, setDynamicLinks] = useState<DynamicNavItem[]>([]);
+
+  const openLogin = () => {
+    setAuthModalView('login');
+    setIsAuthModalOpen(true);
+    onClose();
+  };
+
+  const openSignup = () => {
+    setAuthModalView('signup');
+    setIsAuthModalOpen(true);
+    onClose();
+  };
 
   useEffect(() => {
     const fetchLinks = async () => {
@@ -92,29 +104,41 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
       "w-64 h-screen bg-slate-900 text-slate-300 flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 transform lg:translate-x-0",
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
-      <div className="p-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {settings?.logo_url ? (
-            <img src={settings.logo_url} alt={`${settings?.site_title || 'SmartPDF'} Logo`} className="h-10 w-auto object-contain" />
-          ) : (
-            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center p-2 shadow-lg shadow-red-500/20">
-              <Icons.FileText className="text-white w-full h-full" aria-hidden="true" />
-            </div>
-          )}
-          <span className="font-outfit font-black text-xl tracking-tight text-white whitespace-nowrap overflow-hidden text-ellipsis">
-            {settings?.site_title || 'SmartPDF'}
-          </span>
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt={`${settings?.site_title || 'SmartPDF'} Logo`} className="h-10 w-auto object-contain" />
+            ) : (
+              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center p-2 shadow-lg shadow-red-500/20">
+                <Icons.FileText className="text-white w-full h-full" aria-hidden="true" />
+              </div>
+            )}
+            <span className="font-outfit font-black text-xl tracking-tight text-white whitespace-nowrap overflow-hidden text-ellipsis">
+              {settings?.site_title || 'SmartPDF'}
+            </span>
+          </div>
+          <button 
+            onClick={onClose}
+            className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
+            aria-label="Close Sidebar"
+          >
+            <Icons.X size={20} />
+          </button>
         </div>
-        <button 
-          onClick={onClose}
-          className="lg:hidden p-2 text-slate-400 hover:text-white transition-colors"
-          aria-label="Close Sidebar"
-        >
-          <Icons.X size={20} />
-        </button>
+
+        {/* Global Search inside Sidebar */}
+        <div className="relative mb-6">
+          <input 
+            type="text" 
+            placeholder="Search tools..."
+            className="w-full bg-slate-800/50 border border-slate-700/50 h-10 pl-10 pr-4 rounded-xl text-xs text-white placeholder:text-slate-500 focus:ring-2 focus:ring-red-500/20 transition-all font-medium"
+          />
+          <Icons.Search className="absolute left-3 top-2.5 text-slate-500" size={14} />
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+      <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
         <AdDisplay position="Sidebar Top" className="mb-4 px-2" />
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4 mb-2">Main Menu</p>
         {menuItems.map((item) => {
@@ -163,23 +187,45 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
           </>
         )}
         
-        <div className="pt-4">
-          <a
-            href="/account"
-            onClick={(e) => {
-              e.preventDefault();
-              onViewChange('account');
-              onClose();
-            }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm text-slate-400 hover:bg-white/5 hover:text-white",
-              currentView === 'account' && "bg-white/5 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
-            )}
-          >
-            <Icons.User size={18} />
-            My Account
-          </a>
-        </div>
+        {user ? (
+          <div className="pt-8 mt-8 border-t border-slate-800/50">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4 mb-4">My Account</p>
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/30 group">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-red-500/20">
+                <Icons.User size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-white truncate">
+                  {user.email?.split('@')[0]}
+                </p>
+                <button 
+                  onClick={() => {
+                    signOut();
+                    onClose();
+                  }}
+                  className="text-[10px] font-bold text-slate-500 hover:text-red-400 uppercase tracking-widest transition-colors mt-0.5"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="pt-8 mt-8 border-t border-slate-800/50 flex flex-col gap-2 px-2">
+            <button 
+              onClick={openLogin}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-800 text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-all border border-slate-700"
+            >
+              Sign In
+            </button>
+            <button 
+              onClick={openSignup}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-red-500 transition-all shadow-lg shadow-red-600/20"
+            >
+              Get Started Free
+            </button>
+          </div>
+        )}
         <AdDisplay position="Sidebar Bottom" className="mt-8 px-2" />
       </nav>
     </aside>

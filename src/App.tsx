@@ -28,11 +28,11 @@ import { HistoryDashboard } from './components/HistoryDashboard';
 import { DynamicPage } from './components/DynamicPage';
 import { CodeInjection } from './components/CodeInjection';
 import { DynamicFooter } from './components/DynamicFooter';
-import { DynamicHeader } from './components/DynamicHeader';
+import * as Icons from 'lucide-react';
 import { AdDisplay } from './components/AdDisplay';
 import { SEO } from './components/SEO';
 import { ToolId, AppView } from './types';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2, Menu } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import { syncCmsContent } from './lib/cmsSync';
@@ -186,12 +186,23 @@ function AppContent() {
       </AnimatePresence>
 
       <main className="flex-1 lg:ml-64 min-h-screen relative overflow-x-hidden flex flex-col">
-        <DynamicHeader 
-          currentView={currentView}
-          onViewChange={handleViewChange}
-          onSelectTool={handleToolSelect}
-          onSidebarToggle={() => setIsSidebarOpen(true)}
-        />
+        {/* Mobile-only toggle bar */}
+        <div className="lg:hidden h-16 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-40 px-4 flex items-center justify-between">
+           <button 
+             onClick={() => setIsSidebarOpen(true)}
+             className="p-2 -ml-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+           >
+             <Icons.Menu size={20} />
+           </button>
+           <div className="flex items-center gap-2">
+              {settings?.logo_url ? (
+                 <img src={settings.logo_url} alt="Logo" className="h-8 w-auto" />
+              ) : (
+                 <span className="font-outfit font-black text-slate-900">{settings?.site_title || 'SmartPDF'}</span>
+              )}
+           </div>
+           <div className="w-8" /> {/* Spacer */}
+        </div>
         
         <AdDisplay position="After Header" className="mt-4" />
 
