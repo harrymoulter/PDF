@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { AppView } from '../types';
@@ -29,13 +30,25 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
   useEffect(() => {
     const fetchLinks = async () => {
       try {
-        const { data, error } = await supabase
-          .from('navigation')
+        let table = 'navigation_links';
+        let { data, error } = await supabase
+          .from(table)
           .select('*')
           .eq('menu_type', 'header')
           .order('order_index', { ascending: true });
         
-        if (error) return;
+        if (error) {
+          console.warn(`⚠️ [Sidebar] Failed ${table}, falling back...`);
+          table = 'navigation';
+          const { data: navData, error: navError } = await supabase
+            .from(table)
+            .select('*')
+            .eq('menu_type', 'header')
+            .order('order_index', { ascending: true });
+          
+          if (navError) return;
+          data = navData;
+        }
         setDynamicLinks(data || []);
       } catch (err) {
         console.error('Error fetching dynamic sidebar links:', err);
@@ -56,12 +69,14 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
     ...(isAdmin ? [{ id: 'admin' as AppView, label: 'Admin Panel', icon: 'ShieldAlert' as keyof typeof Icons }] : []),
   ];
 
+  const navigate = useNavigate();
+
   const handleLinkClick = (e: React.MouseEvent, url: string) => {
     // If it is an internal relative link
     if (url.startsWith('/')) {
        e.preventDefault();
-       window.history.pushState({}, '', url);
-       window.dispatchEvent(new PopStateEvent('popstate'));
+       console.log(`🔗 [Sidebar] Navigating to: ${url}`);
+       navigate(url);
     }
     onClose();
   };

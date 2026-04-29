@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { Search, User, LogOut, LogIn, UserPlus, Menu, Globe, MapPin, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -66,18 +67,21 @@ export function DynamicHeader({ currentView, onViewChange, onSelectTool, onSideb
     }
   };
 
+  const navigate = useNavigate();
+
   const handleLinkClick = (e: React.MouseEvent, item: NavItem) => {
     if (item.link_type === 'External URL' || item.url.startsWith('http')) return;
     
     e.preventDefault();
     const url = item.url;
     
+    console.log(`🔗 [Header] Navigating to: ${url}`);
+    
     if (url.startsWith('/tool/')) {
       const toolId = url.split('/tool/')[1] as ToolId;
       onSelectTool(toolId);
     } else {
-      window.history.pushState({}, '', url);
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      navigate(url);
     }
   };
 

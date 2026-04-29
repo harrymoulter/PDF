@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, ChevronLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -17,6 +18,7 @@ export function DynamicPage({ slug, onBack }: { slug: string, onBack: () => void
   const [page, setPage] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPage();
@@ -77,7 +79,7 @@ export function DynamicPage({ slug, onBack }: { slug: string, onBack: () => void
               Return to Tools
             </button>
             <button 
-              onClick={() => window.history.pushState({}, '', '/')}
+              onClick={() => navigate('/')}
               className="w-full sm:w-auto px-8 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
             >
               Go to Home
@@ -88,17 +90,17 @@ export function DynamicPage({ slug, onBack }: { slug: string, onBack: () => void
             <div>
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Popular Tools</h4>
               <ul className="space-y-2">
-                <li><button onClick={() => window.location.href='/tool/compress'} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Compress PDF</button></li>
-                <li><button onClick={() => window.location.href='/tool/merge'} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Merge PDF</button></li>
-                <li><button onClick={() => window.location.href='/tool/ocr'} className="text-xs font-bold text-slate-600 hover:text-indigo-600">OCR Documents</button></li>
+                <li><button onClick={() => navigate('/tool/compress')} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Compress PDF</button></li>
+                <li><button onClick={() => navigate('/tool/merge')} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Merge PDF</button></li>
+                <li><button onClick={() => navigate('/tool/ocr')} className="text-xs font-bold text-slate-600 hover:text-indigo-600">OCR Documents</button></li>
               </ul>
             </div>
             <div>
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Site Links</h4>
               <ul className="space-y-2">
-                <li><button onClick={() => window.location.href='/privacy-policy'} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Privacy Policy</button></li>
-                <li><button onClick={() => window.location.href='/terms'} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Terms of Service</button></li>
-                <li><button onClick={() => window.location.href='/contact'} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Support</button></li>
+                <li><button onClick={() => navigate('/privacy-policy')} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Privacy Policy</button></li>
+                <li><button onClick={() => navigate('/terms')} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Terms of Service</button></li>
+                <li><button onClick={() => navigate('/contact')} className="text-xs font-bold text-slate-600 hover:text-indigo-600">Support</button></li>
               </ul>
             </div>
           </div>

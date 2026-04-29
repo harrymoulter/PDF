@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Github, Mail, Globe } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import { FooterLink, AppView, ToolId } from '../types';
@@ -12,6 +13,7 @@ interface DynamicFooterProps {
 export function DynamicFooter({ onViewChange, onSelectTool }: DynamicFooterProps) {
   const { settings } = useSettings();
   const [footerLinks, setFooterLinks] = useState<FooterLink[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchFooterLinks = async () => {
@@ -101,9 +103,8 @@ export function DynamicFooter({ onViewChange, onSelectTool }: DynamicFooterProps
     if (url.startsWith('http') || url.startsWith('mailto:')) return;
 
     e.preventDefault();
-    window.history.pushState({}, '', url);
-    // Trigger popstate manually so App.tsx sees the navigation
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    console.log(`🔗 [Footer] Navigating to: ${url}`);
+    navigate(url);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
