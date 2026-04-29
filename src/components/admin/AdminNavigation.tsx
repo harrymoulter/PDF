@@ -96,10 +96,17 @@ export function AdminNavigation() {
     console.log('💾 [AdminNav] Starting save operation...');
     try {
       const payload = navItems.map((item) => {
-        const { id, created_at, ...rest } = item;
-        const data: any = { ...rest };
-        if (id && !id.startsWith('temp-')) {
-          data.id = id;
+        // Explicitly only take columns that should be in navigation_links / navigation
+        const data: any = {
+          name: item.name,
+          url: item.url,
+          menu_type: item.menu_type,
+          order_index: item.order_index,
+          link_type: item.link_type
+        };
+
+        if (item.id && !item.id.startsWith('temp-')) {
+          data.id = item.id;
         }
         return data;
       });
