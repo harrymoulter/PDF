@@ -1,0 +1,6 @@
+{
+  "name": "PDFMaster - Free AI PDF Toolkit",
+  "description": "The ultimate free PDF intelligence suite. Extract data, perform OCR, summarize documents, and semantic search your PDF library without subscription fees.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["Smart Summarization", "Semantic Search", "Entity Extraction", "Local OCR"]
+}
