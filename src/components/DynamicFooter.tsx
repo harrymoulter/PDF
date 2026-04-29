@@ -19,56 +19,19 @@ export function DynamicFooter({ onViewChange, onSelectTool }: DynamicFooterProps
     const fetchFooterLinks = async () => {
       console.log('🔍 [Footer] Fetching navigation links for footer from DB...');
       try {
-        let data: any[] | null = null;
-        let table = 'navigation_links';
-        
-        // Try navigation_links first
-        let { data: nlData, error: nlError } = await supabase
-          .from(table)
+        const { data, error } = await supabase
+          .from('navigation_links')
           .select('*')
-          .filter('menu_type', 'like', 'footer%')
+          .eq('location', 'footer')
           .order('order_index', { ascending: true });
         
-        if (nlError) {
-          console.warn(`⚠️ [Footer] Failed ${table}, trying 'navigation'...`);
-          table = 'navigation';
-          const { data: navData, error: navError } = await supabase
-            .from(table)
-            .select('*')
-            .filter('menu_type', 'like', 'footer%')
-            .order('order_index', { ascending: true });
-          
-          if (navError) {
-            console.warn(`⚠️ [Footer] Failed ${table}, final fallback to 'footer_links'...`);
-            table = 'footer_links';
-            const { data: flData, error: flError } = await supabase
-              .from(table)
-              .select('*')
-              .order('order_index', { ascending: true });
-            
-            if (flError) throw flError;
-            data = flData;
-          } else {
-            data = navData;
-          }
-        } else {
-          data = nlData;
-        }
+        if (error) throw error;
         
         if (!data || data.length === 0) {
           console.warn('⚠️ [Footer] No footer links found in DB.');
           setFooterLinks([]);
         } else {
-          const normalized = data.map(item => {
-             let section = item.section;
-             if (!section && item.menu_type) {
-                if (item.menu_type === 'footer_1') section = 'company';
-                else if (item.menu_type === 'footer_2') section = 'legal';
-                else section = 'quick';
-             }
-             return { ...item, section: section || 'quick' };
-          });
-          setFooterLinks(normalized);
+          setFooterLinks(data);
         }
       } catch (err) {
         console.error('❌ [Footer] Critical fetch error:', err);

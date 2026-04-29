@@ -123,8 +123,6 @@ function AppContent() {
 
   useEffect(() => {
     console.log("🚀 [Router] Current route:", location.pathname);
-    // Run CMS sync on startup
-    syncCmsContent();
   }, [location.pathname]);
 
   if (loading) {
@@ -167,10 +165,8 @@ function AppContent() {
       <CodeInjection />
       
       <Sidebar 
-        currentView={currentView} 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onViewChange={handleViewChange} 
       />
 
       <AnimatePresence>

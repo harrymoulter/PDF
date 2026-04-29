@@ -22,18 +22,8 @@ export function AdminNavigation() {
         .select('*')
         .order('order_index', { ascending: true });
       
-      if (error) {
-        console.warn('⚠️ [AdminNav] navigation_links failed, trying navigation table...', error);
-        const { data: altData, error: altError } = await supabase
-          .from('navigation')
-          .select('*')
-          .order('order_index', { ascending: true });
-        
-        if (altError) throw altError;
-        setNavItems(altData || []);
-      } else {
-        setNavItems(data || []);
-      }
+      if (error) throw error;
+      setNavItems(data || []);
     } catch (err) {
       console.error('Error fetching nav items:', err);
     } finally {
@@ -41,17 +31,18 @@ export function AdminNavigation() {
     }
   };
 
-  const addItem = (menu_type: string) => {
+  const addItem = (location: string, section?: string) => {
     const newItems = [...navItems];
-    const itemsInMenu = newItems.filter(i => i.menu_type === menu_type);
+    const itemsInGroup = newItems.filter(i => i.location === location && i.section === section);
     newItems.push({
       id: 'temp-' + Math.random().toString(36).substr(2, 9),
       name: 'New Link',
       url: '/',
-      order_index: itemsInMenu.length,
-      menu_type,
+      order_index: itemsInGroup.length,
+      location,
+      section: section || null,
       link_type: 'Internal Page'
-    });
+    } as any);
     setNavItems(newItems);
   };
 
@@ -59,7 +50,7 @@ export function AdminNavigation() {
     setNavItems(navItems.filter(i => i.id !== id));
   };
 
-  const updateItem = (id: string, updates: Partial<NavItem>) => {
+  const updateItem = (id: string, updates: any) => {
     setNavItems(navItems.map(i => i.id === id ? { ...i, ...updates } : i));
   };
 
@@ -67,22 +58,22 @@ export function AdminNavigation() {
     const item = navItems.find(i => i.id === id);
     if (!item) return;
 
-    const itemsOfSameType = navItems
-      .filter(i => i.menu_type === item.menu_type)
+    const itemsOfSameGroup = navItems
+      .filter(i => i.location === item.location && i.section === item.section)
       .sort((a, b) => a.order_index - b.order_index);
     
-    const index = itemsOfSameType.findIndex(i => i.id === id);
+    const index = itemsOfSameGroup.findIndex(i => i.id === id);
     if (direction === 'up' && index > 0) {
-      const prev = itemsOfSameType[index - 1];
-      const current = itemsOfSameType[index];
+      const prev = itemsOfSameGroup[index - 1];
+      const current = itemsOfSameGroup[index];
       setNavItems(navItems.map(i => {
         if (i.id === current.id) return { ...i, order_index: prev.order_index };
         if (i.id === prev.id) return { ...i, order_index: current.order_index };
         return i;
       }));
-    } else if (direction === 'down' && index < itemsOfSameType.length - 1) {
-      const next = itemsOfSameType[index + 1];
-      const current = itemsOfSameType[index];
+    } else if (direction === 'down' && index < itemsOfSameGroup.length - 1) {
+      const next = itemsOfSameGroup[index + 1];
+      const current = itemsOfSameGroup[index];
       setNavItems(navItems.map(i => {
         if (i.id === current.id) return { ...i, order_index: next.order_index };
         if (i.id === next.id) return { ...i, order_index: current.order_index };
@@ -93,16 +84,15 @@ export function AdminNavigation() {
 
   const handleSaveAll = async () => {
     setSaving(true);
-    console.log('💾 [AdminNav] Starting save operation...');
+    console.log('💾 [AdminNav] Starting clean save operation...');
     try {
       const payload = navItems.map((item) => {
-        // Explicitly only take columns that should be in navigation_links / navigation
         const data: any = {
           name: item.name,
           url: item.url,
-          menu_type: item.menu_type,
-          order_index: item.order_index,
-          link_type: item.link_type
+          location: item.location,
+          section: item.section,
+          order_index: item.order_index
         };
 
         if (item.id && !item.id.startsWith('temp-')) {
@@ -111,40 +101,32 @@ export function AdminNavigation() {
         return data;
       });
 
-      // Attempt primary table
-      console.log('📝 [AdminNav] Attempting write to navigation_links...');
-      let { error: insertError } = await supabase.from('navigation_links').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      
-      if (!insertError) {
-        const { error: batchError } = await supabase.from('navigation_links').insert(payload);
-        insertError = batchError;
-      }
+      // Pure cleanup and insert
+      console.log('📝 [AdminNav] Rebuilding navigation_links table...');
+      const { error: deleteError } = await supabase.from('navigation_links').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (deleteError) throw deleteError;
 
-      if (insertError) {
-        console.error('❌ [AdminNav] navigation_links save failed, trying fallback:', insertError);
-        // Fallback to old table
-        await supabase.from('navigation').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        const { error: oldInsertError } = await supabase.from('navigation').insert(payload);
-        if (oldInsertError) throw oldInsertError;
+      if (payload.length > 0) {
+        const { error: insertError } = await supabase.from('navigation_links').insert(payload);
+        if (insertError) throw insertError;
       }
       
-      console.log('✅ [AdminNav] Save successful! Dispatching global refresh event.');
-      // Notify all dynamic nav components to re-fetch
+      console.log('✅ [AdminNav] Navigation rebuilt successfully.');
       window.dispatchEvent(new CustomEvent('navigation-updated'));
       
       fetchNavItems();
       alert('Navigation updated successfully!');
     } catch (err: any) {
-      console.error('💥 [AdminNav] Critical save error:', err);
+      console.error('💥 [AdminNav] Save error:', err);
       alert('Error saving navigation: ' + err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const renderMenuList = (type: string, title: string) => {
+  const renderMenuList = (location: string, section: string | null, title: string) => {
     const items = navItems
-      .filter(i => i.menu_type === type)
+      .filter(i => i.location === location && i.section === section)
       .sort((a, b) => a.order_index - b.order_index);
     
     return (
@@ -154,9 +136,8 @@ export function AdminNavigation() {
             <NavigationIcon size={16} className="text-red-600" /> {title}
           </h4>
           <button 
-            onClick={() => addItem(type)}
+            onClick={() => addItem(location, section || undefined)}
             className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-all shadow-sm"
-            title="Add Link"
           >
             <Plus size={16} />
           </button>
@@ -270,10 +251,10 @@ export function AdminNavigation() {
                <div className="flex justify-between items-center px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm mb-4">
                   <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center p-1.5"><div className="w-full h-full border-2 border-white rounded-sm"/></div>
                   <div className="flex gap-4">
-                     {navItems.filter(i => i.menu_type === 'header').slice(0, 4).map(i => (
+                     {navItems.filter(i => i.location === 'header').slice(0, 4).map(i => (
                         <div key={i.id} className="text-[8px] font-black uppercase text-slate-400">{i.name}</div>
                      ))}
-                     {navItems.filter(i => i.menu_type === 'header').length === 0 && <div className="text-[8px] font-black uppercase text-slate-200 italic">Header links appear here</div>}
+                     {navItems.filter(i => i.location === 'header').length === 0 && <div className="text-[8px] font-black uppercase text-slate-200 italic">Header links appear here</div>}
                   </div>
                   <div className="w-6 h-6 bg-slate-100 rounded-full"/>
                </div>
@@ -282,13 +263,13 @@ export function AdminNavigation() {
 
             <div className="border border-slate-100 rounded-2xl p-6 bg-slate-900">
                <div className="grid grid-cols-3 gap-8">
-                  {[1, 2, 3].map(col => (
-                     <div key={col} className="space-y-2">
+                  {['company', 'legal', 'quick'].map(sec => (
+                     <div key={sec} className="space-y-2">
                         <div className="w-12 h-1 bg-slate-700 rounded-full mb-3"/>
-                        {navItems.filter(i => i.menu_type === `footer_${col}`).slice(0, 3).map(i => (
+                        {navItems.filter(i => i.location === 'footer' && i.section === sec).slice(0, 3).map(i => (
                            <div key={i.id} className="text-[7px] font-bold text-slate-500">{i.name}</div>
                         ))}
-                        {navItems.filter(i => i.menu_type === `footer_${col}`).length === 0 && <div className="text-[7px] text-slate-700 italic">Column {col}</div>}
+                        {navItems.filter(i => i.location === 'footer' && i.section === sec).length === 0 && <div className="text-[7px] text-slate-700 italic">{sec}</div>}
                      </div>
                   ))}
                </div>
@@ -321,18 +302,18 @@ export function AdminNavigation() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {activeTab === 'header' ? (
           <div className="lg:col-span-12">
-            {renderMenuList('header', 'Primary Header Menu')}
+            {renderMenuList('header', null, 'Primary Header Menu')}
           </div>
         ) : (
           <>
             <div className="lg:col-span-4">
-              {renderMenuList('footer_1', 'Column 1: Essentials')}
+              {renderMenuList('footer', 'company', 'Column 1: Company')}
             </div>
             <div className="lg:col-span-4">
-              {renderMenuList('footer_2', 'Column 2: Company')}
+              {renderMenuList('footer', 'legal', 'Column 2: Legal')}
             </div>
             <div className="lg:col-span-4">
-              {renderMenuList('footer_3', 'Column 3: Security & Legal')}
+              {renderMenuList('footer', 'quick', 'Column 3: Quick Links')}
             </div>
           </>
         )}

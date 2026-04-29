@@ -75,7 +75,8 @@ export interface NavItem {
   id?: string;
   name: string;
   url: string;
-  menu_type: string;
+  location: 'header' | 'footer';
+  section: string | null;
   order_index: number;
   link_type: 'Internal Page' | 'External URL';
   created_at?: string;
